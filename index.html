@@ -1,597 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Congratulations, Joyce</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg: #060814;
-    --bg-2: #0b1024;
-    --panel: #0d1330;
-    --panel-line: rgba(120,170,255,0.18);
-    --cyan: #4df3ff;
-    --violet: #9b6bff;
-    --magenta: #ff5fc4;
-    --gold: #ffd76a;
-    --ink: #e8ecff;
-    --ink-dim: #93a0c9;
-    box-sizing: border-box;
-  }
-  *{ box-sizing: inherit; }
-  html{
-    scroll-padding-top: env(safe-area-inset-top, 0px);
-  }
-  html, body{
-    height: 100%;
-    margin: 0;
-  }
-  body{
-    background: radial-gradient(ellipse 120% 80% at 50% -10%, #131c44 0%, var(--bg) 55%, #030409 100%);
-    color: var(--ink);
-    font-family: 'Rajdhani', sans-serif;
-    min-height: 100%;
-    overflow-x: hidden;
-    position: relative;
-  }
+  <meta charset="UTF-8">
+  <title>Congratulations, Joyce</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-  canvas#field{
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-    pointer-events: none;
-  }
+  <!-- Orbitron Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
 
-  .grid-floor{
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    height: 40vh;
-    background-image:
-      linear-gradient(rgba(77,243,255,0.09) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(77,243,255,0.09) 1px, transparent 1px);
-    background-size: 48px 48px;
-    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent 90%);
-    mask-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent 90%);
-    transform: perspective(300px) rotateX(60deg);
-    transform-origin: bottom;
-    z-index: 0;
-    opacity: 0.6;
-  }
-
-  main{
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    min-height: 100vh;
-    min-height: 100dvh;
-    padding: 0;
-  }
-
-  /* ---------- Boot sequence ---------- */
-  #boot{
-    width: min(640px, 92vw);
-    font-family: 'Rajdhani', monospace;
-    color: var(--cyan);
-    font-size: clamp(13px, 2.4vw, 16px);
-    line-height: 1.7;
-    margin: 0 auto;
-    padding-top: calc(10vh + env(safe-area-inset-top, 0px));
-    min-height: 220px;
-    letter-spacing: 0.02em;
-  }
-  #boot .line{ opacity: 0; white-space: pre-wrap; }
-  #boot .ok{ color: var(--gold); }
-  #boot .cursor{
-    display: inline-block;
-    width: 9px; height: 1.1em;
-    background: var(--cyan);
-    vertical-align: text-bottom;
-    animation: blink 1s steps(1) infinite;
-    margin-left: 2px;
-  }
-  @keyframes blink{ 50%{ opacity: 0; } }
-
-  #boot.done{ display: none; }
-
-  /* ---------- Card (fills the page) ---------- */
-  #card{
-    flex: 1;
-    width: 100%;
-    opacity: 0;
-    transform: translateY(18px);
-    display: flex;
-  }
-  #card.reveal{
-    animation: cardIn 900ms cubic-bezier(.2,.8,.25,1) forwards;
-  }
-  @keyframes cardIn{
-    to{ opacity: 1; transform: translateY(0); }
-  }
-
-  .panel{
-    position: relative;
-    width: 100%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(180deg, rgba(19,26,58,0.92), rgba(9,13,32,0.96));
-    border-top: 1px solid var(--panel-line);
-    border-bottom: 1px solid var(--panel-line);
-    box-shadow:
-      0 0 60px -10px rgba(77,243,255,0.12) inset;
-    overflow: hidden;
-  }
-
-  .panel::before{
-    content: "";
-    position: absolute;
-    left: 0; right: 0; top: -2px;
-    height: 3px;
-    background: conic-gradient(from var(--ang, 0deg), var(--cyan), var(--violet), var(--magenta), var(--gold), var(--cyan));
-    opacity: 0.8;
-    animation: rotate-border 7s linear infinite;
-    pointer-events: none;
-  }
-  @keyframes rotate-border{
-    to{ --ang: 360deg; }
-  }
-  @property --ang{
-    syntax: '<angle>';
-    inherits: false;
-    initial-value: 0deg;
-  }
-
-  .titlebar{
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px max(18px, env(safe-area-inset-left, 0px)) 14px max(18px, env(safe-area-inset-right, 0px));
-    padding-top: calc(14px + env(safe-area-inset-top, 0px));
-    border-bottom: 1px solid var(--panel-line);
-    font-family: 'Orbitron', sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    color: var(--ink-dim);
-    background: rgba(255,255,255,0.02);
-    flex: 0 0 auto;
-  }
-  .dot{ width: 9px; height: 9px; border-radius: 50%; }
-  .dot.r{ background: #ff5f56; }
-  .dot.y{ background: #ffbd2e; }
-  .dot.g{ background: #27c93f; }
-  .titlebar .path{ margin-left: 10px; opacity: 0.8; }
-
-  .content{
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: clamp(32px, 6vw, 64px) 20px calc(clamp(40px, 8vw, 80px) + env(safe-area-inset-bottom, 0px));
-    width: 100%;
-  }
-  .content > *{
-    width: 100%;
-    max-width: 720px;
-  }
-
-  /* ---------- Photo ---------- */
-  .avatar-wrap{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .avatar{
-    position: relative;
-    width: clamp(110px, 20vw, 150px);
-    height: clamp(110px, 20vw, 150px);
-    border-radius: 50%;
-    padding: 4px;
-    background: conic-gradient(from var(--ang, 0deg), var(--cyan), var(--violet), var(--magenta), var(--gold), var(--cyan));
-    animation: rotate-border 8s linear infinite;
-    box-shadow: 0 0 40px -6px rgba(155,107,255,0.55);
-  }
-  .avatar-inner{
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    overflow: hidden;
-    background: #0d1330;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .avatar-inner img{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .avatar-badge{
-    position: absolute;
-    right: 2px;
-    bottom: 2px;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: var(--bg);
-    border: 2px solid var(--panel-line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-  }
-  .avatar-caption{
-    margin-top: 14px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: var(--ink-dim);
-    text-align: center;
-  }
-
-  .badge{
-    display: inline-flex;
-    align-self: center;
-    align-items: center;
-    gap: 10px;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: clamp(11px, 2vw, 13px);
-    letter-spacing: 0.16em;
-    color: var(--bg);
-    background: linear-gradient(120deg, var(--gold), var(--magenta));
-    padding: 8px 16px;
-    border-radius: 999px;
-    box-shadow: 0 8px 30px -8px rgba(255, 95, 196, 0.6);
-    width: auto;
-    max-width: none;
-    margin-top: 22px;
-  }
-
-  h1{
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    font-size: clamp(26px, 6vw, 46px);
-    line-height: 1.15;
-    margin: 22px 0 6px;
-    text-align: center;
-    background: linear-gradient(100deg, var(--cyan), var(--violet) 55%, var(--magenta));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 0 60px rgba(155,107,255,0.25);
-  }
-
-  .subline{
-    font-size: clamp(14px, 2.6vw, 18px);
-    color: var(--ink-dim);
-    margin: 0 0 28px;
-    font-weight: 500;
-    text-align: center;
-  }
-
-  .letter{
-    max-width: 640px;
-    align-self: center;
-  }
-  .letter p{
-    font-size: clamp(15.5px, 2.6vw, 17.5px);
-    line-height: 1.75;
-    color: var(--ink);
-    margin: 0 0 18px;
-  }
-
-  .quote{
-    position: relative;
-    max-width: 640px;
-    align-self: center;
-    margin: 30px 0;
-    padding: 18px 22px 18px 26px;
-    border-left: 2px solid var(--cyan);
-    background: linear-gradient(90deg, rgba(77,243,255,0.07), transparent 70%);
-    font-family: 'Rajdhani', monospace;
-    font-style: normal;
-    color: var(--cyan);
-    font-size: clamp(14.5px, 2.4vw, 16.5px);
-    line-height: 1.6;
-    border-radius: 0 8px 8px 0;
-  }
-  .quote::before{
-    content: "// ACHIEVEMENT.LOG";
-    display: block;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    color: var(--ink-dim);
-    margin-bottom: 8px;
-  }
-
-  .prayer{
-    max-width: 640px;
-    align-self: center;
-    font-size: clamp(15px, 2.5vw, 16.5px);
-    color: var(--ink-dim);
-    line-height: 1.75;
-    margin: 0 0 30px;
-  }
-
-  .sign-off{
-    max-width: 640px;
-    align-self: center;
-    border-top: 1px dashed var(--panel-line);
-    padding-top: 26px;
-    margin-top: 10px;
-  }
-  .sign-off .cheer{
-    font-family: 'Orbitron', sans-serif;
-    font-size: clamp(16px, 3vw, 19px);
-    font-weight: 700;
-    color: var(--gold);
-    margin: 0 0 14px;
-  }
-  .sign-off p{
-    margin: 0 0 6px;
-    color: var(--ink);
-    font-size: clamp(15px, 2.5vw, 16.5px);
-  }
-  .sign-off .from{
-    color: var(--ink-dim);
-  }
-  .sign-off .heart{
-    color: var(--magenta);
-  }
-  .commit{
-    margin-top: 20px;
-    font-family: 'Rajdhani', monospace;
-    font-size: 12.5px;
-    color: var(--ink-dim);
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--panel-line);
-    border-radius: 8px;
-    padding: 12px 14px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-  }
-  .commit b{ color: var(--cyan); font-weight: 600; }
-
-  .name-target{
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    background: linear-gradient(100deg, var(--gold), var(--magenta));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  footer{
-    position: relative;
-    z-index: 2;
-    text-align: center;
-    flex: 0 0 auto;
-    padding: 18px 20px calc(18px + env(safe-area-inset-bottom, 0px));
-  }
-  footer .tag{
-    font-family: 'Orbitron', sans-serif;
-    font-size: clamp(13px, 2.4vw, 16px);
-    letter-spacing: 0.04em;
-    color: var(--ink-dim);
-  }
-  footer .tag span{
-    color: var(--cyan);
-    text-shadow: 0 0 18px rgba(77,243,255,0.5);
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    *, *::before, *::after{
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle at center, #020617, #000);
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      overflow-x: hidden; /* enable vertical scrolling */
     }
-  }
 
-  :focus-visible{
-    outline: 2px solid var(--cyan);
-    outline-offset: 3px;
-  }
-</style>
+    /* Matrix Background */
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* Main Container */
+    .container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      padding: 60px 16px;
+      padding-top: calc(60px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* Photo */
+    .avatar {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid rgba(0, 255, 255, 0.7);
+      box-shadow: 0 0 15px cyan, 0 0 30px #00f0ff;
+      margin-bottom: 14px;
+    }
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .avatar-caption {
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      color: #a8fffb;
+      text-shadow: 0 0 8px #00e1ff;
+      margin-bottom: 26px;
+    }
+
+    /* Glowing Title */
+    .title {
+      font-size: clamp(2rem, 6vw, 3.8rem);
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00f0ff;
+      text-shadow: 0 0 15px #00f0ff, 0 0 30px #00f0ff, 0 0 60px cyan;
+      animation: glowPulse 2s infinite alternate;
+    }
+
+    @keyframes glowPulse {
+      from {
+        text-shadow: 0 0 15px #00f0ff, 0 0 30px #00ffe6;
+      }
+      to {
+        text-shadow: 0 0 25px #00f0ff, 0 0 60px #00ffe6;
+      }
+    }
+
+    .recipient {
+      display: block;
+      margin-top: 10px;
+      font-size: clamp(1.2rem, 3.4vw, 1.6rem);
+      color: #39ff14;
+      text-shadow: 0 0 10px #39ff14, 0 0 30px #39ff14;
+    }
+
+    /* Neon Panel */
+    .panel {
+      max-width: 900px;
+      width: 100%;
+      border: 2px solid rgba(0, 255, 255, 0.7);
+      border-radius: 20px;
+      padding: 24px;
+      margin-top: 30px;
+      box-shadow: 0 0 20px cyan, 0 0 40px #00f0ff inset;
+      backdrop-filter: blur(6px);
+    }
+
+    .message {
+      font-size: clamp(1rem, 3.8vw, 1.4rem);
+      line-height: 1.7;
+      color: #d6faff;
+      text-shadow: 0 0 8px #00e1ff;
+      text-align: left;
+      margin: 0 0 18px;
+    }
+    .message:last-child{ margin-bottom: 0; }
+
+    .quote {
+      border-left: 3px solid #39ff14;
+      padding-left: 16px;
+      margin: 26px 0;
+      font-style: italic;
+      color: #d6faff;
+      text-shadow: 0 0 8px #39ff14;
+      text-align: left;
+    }
+
+    .sign-off {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px dashed rgba(0, 255, 255, 0.4);
+      text-align: left;
+    }
+    .sign-off p { margin: 0 0 6px; }
+    .sign-off .heart { color: #ff5fc4; text-shadow: 0 0 10px #ff5fc4; }
+
+    .commit {
+      margin-top: 18px;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      color: #a8fffb;
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+    }
+    .commit b { color: #00f0ff; }
+
+    /* Footer */
+    .footer {
+      margin-top: 30px;
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      color: #a8fffb;
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px #00e1ff;
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .title{ animation: none; text-shadow: 0 0 20px #00f0ff, 0 0 45px #00ffe6; }
+    }
+    :focus-visible{ outline: 2px solid #00f0ff; outline-offset: 3px; }
+  </style>
 </head>
+
 <body>
 
-<canvas id="field"></canvas>
-<div class="grid-floor"></div>
+<canvas id="matrix"></canvas>
 
-<main>
-  <div id="boot">
-    <div class="line" data-t="0">&gt; initializing celebration_protocol.exe</div>
-    <div class="line" data-t="1">&gt; loading module: <span class="ok">sister.achievement</span></div>
-    <div class="line" data-t="2">&gt; compiling career.exe ...</div>
-    <div class="line" data-t="3">&gt; running tests ... <span class="ok">ALL PASSED</span></div>
-    <div class="line" data-t="4">&gt; <span class="ok">BUILD SUCCESSFUL</span> — status: 200 OK<span class="cursor"></span></div>
+<div class="container">
+
+  <!--
+    PHOTO: replace the src on the <img> below with Joyce's actual photo.
+    - If hosting this file yourself, point src to a local file, e.g. src="joyce.jpg"
+    - Or paste a hosted image URL, e.g. src="https://your-image-host.com/joyce.jpg"
+    Until then, a placeholder silhouette is shown in her place.
+  -->
+  <div class="avatar">
+    <img
+      src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23071018'/%3E%3Cstop offset='100%25' stop-color='%23020617'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='150' height='150' fill='url(%23g)'/%3E%3Ccircle cx='75' cy='58' r='28' fill='%23103042'/%3E%3Cpath d='M20 140 C20 100 55 88 75 88 C95 88 130 100 130 140 Z' fill='%23103042'/%3E%3C/svg%3E"
+      alt="Photo of Nakalyango Joyce Stecia — replace this placeholder with her real photo"
+    >
   </div>
+  <span class="avatar-caption">Nakalyango Joyce Stecia</span>
 
-  <div id="card">
-    <div class="panel">
-      <div class="titlebar">
-        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="path">~/family/joyce/congratulations.msg</span>
-      </div>
-      <div class="content">
+  <div class="title">Congratulations &amp; Best Wishes</div>
+  <span class="recipient">To my dear sister, Nakalyango Joyce Stecia</span>
 
-        <!--
-          PHOTO: replace the src on the <img> below with Joyce's actual photo.
-          - If hosting this file yourself, point src to a local file, e.g. src="joyce.jpg"
-          - Or paste a hosted image URL, e.g. src="https://your-image-host.com/joyce.jpg"
-          Until then, a placeholder silhouette is shown in her place.
-        -->
-        <div class="avatar-wrap">
-          <div class="avatar">
-            <div class="avatar-inner">
-              <img
-                src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23151c3d'/%3E%3Cstop offset='100%25' stop-color='%230d1330'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='150' height='150' fill='url(%23g)'/%3E%3Ccircle cx='75' cy='58' r='28' fill='%232a3466'/%3E%3Cpath d='M20 140 C20 100 55 88 75 88 C95 88 130 100 130 140 Z' fill='%232a3466'/%3E%3C/svg%3E"
-                alt="Photo of Nakalyango Joyce Stecia — replace this placeholder with her real photo"
-              >
-            </div>
-            <span class="avatar-badge" aria-hidden="true">📷</span>
-          </div>
-          <span class="avatar-caption">Nakalyango Joyce Stecia</span>
-        </div>
+  <div class="panel">
+    <p class="message">Dear Joyce,</p>
+    <p class="message">Today is a beautiful reminder that hard work, patience, and determination always have a reward. I am so proud of you and everything you have achieved.</p>
+    <p class="message">As your brother and a Computer Science student, I have learned that every great result begins with a single step, just like writing the first line of code. Sometimes the program fails, sometimes we have to debug, restart, and try again — but eventually, we find a way forward.</p>
+    <p class="message">Your journey is just like that. Every challenge you faced has helped build the strong person you are today. Never doubt yourself or the ability you have to achieve great things.</p>
+    <p class="message">As you begin this new chapter, may you continue to dream boldly, work hard, believe in yourself, and never be afraid to start again when things don't go as planned.</p>
 
-        <span class="badge">✦ Achievement Unlocked</span>
-        <h1>Congratulations &amp; Best Wishes</h1>
-        <p class="subline">To my dear sister, <span class="name-target">Nakalyango Joyce Stecia</span></p>
+    <div class="quote">"Success is not the end of the journey; it is the courage to keep moving forward."</div>
 
-        <div class="letter">
-          <p>Dear Joyce,</p>
-          <p>Today is a beautiful reminder that hard work, patience, and determination always have a reward. I am so proud of you and everything you have achieved.</p>
-          <p>As your brother and a Computer Science student, I have learned that every great result begins with a single step, just like writing the first line of code. Sometimes the program fails, sometimes we have to debug, restart, and try again — but eventually, we find a way forward.</p>
-          <p>Your journey is just like that. Every challenge you faced has helped build the strong person you are today. Never doubt yourself or the ability you have to achieve great things.</p>
-          <p>As you begin this new chapter, may you continue to dream boldly, work hard, believe in yourself, and never be afraid to start again when things don't go as planned.</p>
-        </div>
+    <p class="message">I pray that God guides your steps, opens new doors for you, and fills your future with happiness, wisdom, success, and countless opportunities.<br><br>💐 Keep shining, Joyce! Your success makes your brother proud, and I will always be cheering for you.</p>
 
-        <div class="quote">"Success is not the end of the journey; it is the courage to keep moving forward."</div>
+    <div class="sign-off">
+      <p class="message">With love and pride,</p>
+      <p class="message">Your Brother <span class="heart">❤️</span></p>
+      <p class="message">Bachelor of Science in Computer Science 💻🎓</p>
 
-        <p class="prayer">I pray that God guides your steps, opens new doors for you, and fills your future with happiness, wisdom, success, and countless opportunities.<br><br>💐 Keep shining, Joyce! Your success makes your brother proud, and I will always be cheering for you.</p>
-
-        <div class="sign-off">
-          <p class="cheer">With love and pride,</p>
-          <p class="from">Your Brother <span class="heart">❤️</span></p>
-          <p class="from">Bachelor of Science in Computer Science 💻🎓</p>
-
-          <div class="commit">
-            <span><b>commit:</b> congrats_joyce.final</span>
-            <span><b>status:</b> delivered</span>
-            <span><b>from:</b> brother.exe</span>
-          </div>
-        </div>
+      <div class="commit">
+        <span><b>commit:</b> congrats_joyce.final</span>
+        <span><b>status:</b> delivered</span>
+        <span><b>from:</b> brother.exe</span>
       </div>
     </div>
   </div>
 
-  <footer>
-    <div class="tag">Your future is <span>bright</span>. Keep believing. Keep growing. Keep winning. 🌟</div>
-  </footer>
-</main>
+  <div class="footer">
+    Your future is bright. Keep believing. Keep growing. Keep winning. 🌟
+  </div>
+</div>
 
 <script>
-(function(){
-  // Boot sequence typing/reveal
-  var lines = document.querySelectorAll('#boot .line');
-  var boot = document.getElementById('boot');
-  var card = document.getElementById('card');
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Matrix Rain Background
+  const canvas = document.getElementById("matrix");
+  const ctx = canvas.getContext("2d");
 
-  function revealCard(){
-    boot.classList.add('done');
-    card.classList.add('reveal');
-    burst();
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
+  resizeCanvas();
 
-  if (reduced){
-    lines.forEach(function(l){ l.style.opacity = 1; });
-    revealCard();
-  } else {
-    lines.forEach(function(line, i){
-      setTimeout(function(){
-        line.style.transition = 'opacity 250ms ease';
-        line.style.opacity = 1;
-      }, i * 480);
-    });
-    setTimeout(revealCard, lines.length * 480 + 500);
-  }
+  const chars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ{}[]<>=+-*/&|#@$";
+  const fontSize = 18;
+  let columns = canvas.width / fontSize;
+  let drops = Array(Math.floor(columns)).fill(1);
 
-  // Confetti-ish burst using DOM particles, one orchestrated moment only
-  function burst(){
-    if (reduced) return;
-    var colors = ['#4df3ff', '#9b6bff', '#ff5fc4', '#ffd76a'];
-    var frag = document.createDocumentFragment();
-    var count = window.innerWidth < 480 ? 26 : 46;
-    for (var i = 0; i < count; i++){
-      var p = document.createElement('div');
-      var size = 5 + Math.random() * 6;
-      var startX = 50 + (Math.random() - 0.5) * 30;
-      var dx = (Math.random() - 0.5) * 360;
-      var dy = -(140 + Math.random() * 220);
-      var rot = (Math.random() - 0.5) * 540;
-      var dur = 900 + Math.random() * 700;
-      var delay = Math.random() * 150;
-      p.style.cssText =
-        'position:fixed;left:' + startX + 'vw;top:30vh;width:' + size + 'px;height:' + (size * 0.4) + 'px;' +
-        'background:' + colors[i % colors.length] + ';z-index:5;pointer-events:none;border-radius:2px;' +
-        'opacity:0.95;box-shadow:0 0 8px ' + colors[i % colors.length] + ';' +
-        'transform:translate(0,0) rotate(0deg);' +
-        'transition:transform ' + dur + 'ms cubic-bezier(.16,.8,.3,1) ' + delay + 'ms, opacity ' + (dur*0.6) + 'ms ease ' + (delay + dur*0.4) + 'ms;';
-      frag.appendChild(p);
-      (function(p, dx, dy, rot){
-        requestAnimationFrame(function(){
-          requestAnimationFrame(function(){
-            p.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + rot + 'deg)';
-            p.style.opacity = '0';
-          });
-        });
-      })(p, dx, dy, rot);
-      (function(p, life){ setTimeout(function(){ p.remove(); }, life); })(p, dur + delay + 150);
-    }
-    document.body.appendChild(frag);
-  }
+  function drawMatrix() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Ambient particle field
-  var canvas = document.getElementById('field');
-  var ctx = canvas.getContext('2d');
-  var w, h, particles = [];
-  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+    ctx.fillStyle = "#00ffea";
+    ctx.font = fontSize + "px Orbitron, monospace";
 
-  function resize(){
-    w = window.innerWidth; h = window.innerHeight;
-    canvas.width = w * DPR; canvas.height = h * DPR;
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  }
-  function initParticles(){
-    var n = Math.min(70, Math.floor((w * h) / 22000));
-    particles = [];
-    var cols = ['77,243,255', '155,107,255', '255,95,196'];
-    for (var i = 0; i < n; i++){
-      particles.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: 0.6 + Math.random() * 1.6,
-        vy: 0.06 + Math.random() * 0.18,
-        vx: (Math.random() - 0.5) * 0.05,
-        c: cols[i % cols.length],
-        a: 0.25 + Math.random() * 0.5
-      });
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
     }
   }
-  function tick(){
-    ctx.clearRect(0, 0, w, h);
-    for (var i = 0; i < particles.length; i++){
-      var p = particles[i];
-      p.y -= p.vy; p.x += p.vx;
-      if (p.y < -10){ p.y = h + 10; p.x = Math.random() * w; }
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + p.c + ',' + p.a + ')';
-      ctx.shadowBlur = 6;
-      ctx.shadowColor = 'rgba(' + p.c + ',0.8)';
-      ctx.fill();
-    }
-    requestAnimationFrame(tick);
+
+  let matrixTimer = setInterval(drawMatrix, 35);
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    clearInterval(matrixTimer);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  resize(); initParticles();
-  window.addEventListener('resize', function(){ resize(); initParticles(); });
-  if (!reduced) requestAnimationFrame(tick);
-  else { ctx.clearRect(0,0,w,h); }
-})();
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    columns = canvas.width / fontSize;
+    drops = Array(Math.floor(columns)).fill(1);
+  });
 </script>
+
 </body>
 </html>
